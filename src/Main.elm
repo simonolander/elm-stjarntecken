@@ -1,33 +1,49 @@
 module Main exposing (..)
 
 import Browser
+import Browser.Dom
+import Browser.Events
+import Task exposing (perform)
 import Html exposing (Html, text, div, h1, img)
 import Html.Attributes exposing (src)
-
-
----- MODEL ----
-
-
-type alias Model =
-    {}
-
-
-init : ( Model, Cmd Msg )
-init =
-    ( {}, Cmd.none )
-
+import Model exposing (..)
+import SkyView
 
 
 ---- UPDATE ----
 
 
-type Msg
-    = NoOp
-
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        Resize size ->
+            ( { model
+              | windowSize = size
+              }
+            , Cmd.none
+            )
+        
+        SkyDown position ->
+            ( { model
+              | currentMousePosition = Just position
+              }
+            , Cmd.none
+            )
+        
+        SkyMove position ->
+            ( { model
+              | currentMousePosition = Just position
+              }
+            , Cmd.none
+            )
+        
+        SkyUp position ->
+            ( { model
+              | currentMousePosition = Nothing
+              }
+            , Cmd.none
+            )
 
 
 
@@ -36,14 +52,28 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ img [ src "/logo.svg" ] []
-        , h1 [] [ text "Your Elm App is working!" ]
-        ]
+    let 
+        viewport = 3
+    in
+        div [ Html.Attributes.style "width" (String.fromInt model.windowSize.width ++ "px")
+            , Html.Attributes.style "height" (String.fromInt model.windowSize.height ++ "px")
+            ]
+            [ SkyView.view model
+            ]
 
 
 
 ---- PROGRAM ----
+
+
+init : ( Model, Cmd Msg )
+init =
+    let
+        commands = 
+            Cmd.batch
+                [ perform Resize (Task.map viewportToSize Browser.Dom.getViewport) ]
+    in
+        ( initialModel, commands )
 
 
 main : Program () Model Msg
@@ -52,5 +82,16 @@ main =
         { view = view
         , init = \_ -> init
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = 
+            Sub.batch
+                [ Browser.Events.onResize (\ w h -> Resize { width = w, height = h })
+                ]
+            |> always
         }
+
+
+viewportToSize : Browser.Dom.Viewport -> Size
+viewportToSize viewport =
+    { width = Basics.floor viewport.viewport.width
+    , height = Basics.floor viewport.viewport.height
+    }

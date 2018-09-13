@@ -3,6 +3,8 @@ body {
   margin: 0;
   text-align: center;
   color: #293c4b;
+  background: linear-gradient(black, #0d0031);
+  height: 100%;
 }
 
 h1 {
